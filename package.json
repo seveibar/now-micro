@@ -1,6 +1,6 @@
 {
   "name": "@seveibar/now-micro",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "description": "The missing Micro builder for Now 2.0",
   "keywords": [
     "builder",
