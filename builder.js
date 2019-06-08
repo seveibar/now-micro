@@ -1,4 +1,4 @@
-const { ensureDirSync, writeFileSync } = require("fs-extra")
+const { ensureDirSync, writeFileSync, copySync } = require("fs-extra")
 const { basename, dirname, join: pathJoin } = require("path")
 const FileBlob = require("@now/build-utils/file-blob")
 const FileFsRef = require("@now/build-utils/file-fs-ref")
@@ -15,9 +15,8 @@ module.exports.prepareCache = prepareCache
  * @TODO: should ensure package.json contains micro dependency.
  */
 module.exports.build = async (context, ...args) => {
-  const { entrypoint } = context
-  // TEMP when context.workPath issue is fixed add workPath to destructuring above
-  const workPath = tmp.dirSync().name
+  const { entrypoint, workPath } = context
+  const actualTmpDir = tmp.dirSync().name
 
   const stream = context.files[entrypoint].toStream()
   const { data } = await FileBlob.fromStream({ stream })
@@ -39,7 +38,13 @@ module.exports.build = async (context, ...args) => {
 
     exports = module.exports = (req, res) => require('micro').run(req, res, __original_lambda)
   `
-  const fileDir = pathJoin(workPath, dirname(entrypoint).replace(__dirname, ""))
+
+  copySync(workPath, actualTmpDir)
+
+  const fileDir = pathJoin(
+    actualTmpDir,
+    dirname(entrypoint).replace(__dirname, "")
+  )
   const filePath = pathJoin(fileDir, basename(entrypoint))
   await ensureDirSync(fileDir, { recursive: true })
   await writeFileSync(filePath, content)
