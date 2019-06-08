@@ -1,4 +1,7 @@
+const { ensureDirSync, writeFileSync } = require("fs-extra")
+const { basename, dirname, join: pathJoin } = require("path")
 const FileBlob = require("@now/build-utils/file-blob")
+const FileFsRef = require("@now/build-utils/file-fs-ref")
 const { build: nodeBuild, prepareCache, config } = require("@now/node")
 
 // re-export equivalent assets
@@ -33,9 +36,14 @@ module.exports.build = async (context, ...args) => {
 
     exports = module.exports = (req, res) => require('micro').run(req, res, __original_lambda)
   `
+  console.log({ workPath })
+  const fileDir = pathJoin(workPath, dirname(entrypoint).replace(__dirname, ""))
+  const filePath = pathJoin(fileDir, basename(entrypoint))
+  await ensureDirSync(fileDir, { recursive: true })
+  await writeFileSync(filePath, content)
 
   // override entrypoint file
-  context.files[entrypoint] = new FileBlob({ data: content })
+  context.files[entrypoint] = new FileFsRef({ fsPath: filePath })
 
   // delegate to @now/node the rest of the building process
   return nodeBuild(context, ...args)
